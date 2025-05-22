@@ -57,7 +57,7 @@
         const loader = new THREE.FBXLoader();
         let planeModel; // Speichert das Flugzeugmodell
 
-        loader.load('Kawasaki_LD.fbx', function(object) {
+        loader.load('https://raw.githubusercontent.com/NickClass007/plain/main/Kawasaki_LD.fbx', function(object) {
             planeModel = object;
             scene.add(planeModel);
 
@@ -140,7 +140,6 @@
 
             renderer.render(scene, camera);
         }
-
     </script>
 
 </body>
