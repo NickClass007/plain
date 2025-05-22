@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kawasaki LD Flugzeug-Steuerung</title>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/FBXLoader.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+
+        /* Joystick */
+        #joystick-container {
+            width: 150px;
+            height: 150px;
+            background-color: lightgray;
+            border-radius: 50%;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            touch-action: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #joystick {
+            width: 50px;
+            height: 50px;
+            background-color: blue;
+            border-radius: 50%;
+            position: absolute;
+            touch-action: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Joystick -->
+    <div id="joystick-container">
+        <div id="joystick"></div>
+    </div>
+
+    <script>
+        // THREE.js Szene
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Licht hinzufügen
+        const light = new THREE.AmbientLight(0xffffff);
+        scene.add(light);
+
+        // FBX-Loader
+        const loader = new THREE.FBXLoader();
+        let planeModel; // Speichert das Flugzeugmodell
+
+        loader.load('Kawasaki_LD.fbx', function(object) {
+            planeModel = object;
+            scene.add(planeModel);
+
+            // Position & Größe des Flugzeugs
+            planeModel.position.set(0, 0, 0);
+            planeModel.scale.set(0.1, 0.1, 0.1);
+
+            animate(); // Starte die Animation
+        });
+
+        // Kamera hinter das Flugzeug setzen
+        camera.position.set(0, 2, 5);
+        camera.lookAt(scene.position);
+
+        // Joystick Steuerung
+        const joystick = document.getElementById("joystick");
+        const container = document.getElementById("joystick-container");
+        let activeJoystick = false;
+        let joystickX = 0, joystickY = 0;
+
+        container.addEventListener("touchstart", (event) => {
+            activeJoystick = true;
+            moveJoystick(event);
+        });
+
+        container.addEventListener("touchmove", (event) => {
+            if (activeJoystick) moveJoystick(event);
+        });
+
+        container.addEventListener("touchend", () => {
+            activeJoystick = false;
+            resetJoystick();
+        });
+
+        function moveJoystick(event) {
+            const touch = event.touches[0];
+            const rect = container.getBoundingClientRect();
+            let x = touch.clientX - rect.left;
+            let y = touch.clientY - rect.top;
+            
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const maxDistance = centerX - joystick.clientWidth / 2;
+
+            let deltaX = x - centerX;
+            let deltaY = y - centerY;
+            
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            if (distance > maxDistance) {
+                const angle = Math.atan2(deltaY, deltaX);
+                deltaX = Math.cos(angle) * maxDistance;
+                deltaY = Math.sin(angle) * maxDistance;
+            }
+
+            joystick.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+
+            joystickX = deltaX / maxDistance; // Steuerung links/rechts
+            joystickY = -deltaY / maxDistance; // Steuerung hoch/runter
+        }
+
+        function resetJoystick() {
+            joystick.style.transform = "translate(0, 0)";
+            joystickX = 0;
+            joystickY = 0;
+        }
+
+        // Animations-Loop für das Flugzeug
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (planeModel) {
+                // Steuerung des Flugzeugs
+                planeModel.rotation.z = joystickX * 0.4;  // Seitliche Rolle
+                planeModel.rotation.x = joystickY * 0.3;  // Neigung hoch/runter
+
+                // Kamera bleibt hinter dem Flugzeug
+                camera.position.set(planeModel.position.x, planeModel.position.y + 2, planeModel.position.z + 5);
+                camera.lookAt(planeModel.position);
+            }
+
+            renderer.render(scene, camera);
+        }
+
+    </script>
+
+</body>
+</html>
